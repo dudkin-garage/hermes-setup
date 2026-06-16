@@ -1,0 +1,20 @@
+services:
+  hermes:
+    build:
+      context: .
+      dockerfile: containers/hermes/Dockerfile
+      args:
+        HERMES_IMAGE: ${HERMES_IMAGE:-hermes:latest}
+    image: ${HERMES_SETUP_IMAGE:-dudkin-garage/hermes-setup:local}
+    working_dir: /workspace
+    environment:
+      OP_ACCOUNT: ${OP_ACCOUNT:-}
+      OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN:-}
+    volumes:
+      - .:/workspace
+      - hermes-home:/root
+    stdin_open: true
+    tty: true
+
+volumes:
+  hermes-home:

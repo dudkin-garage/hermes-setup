@@ -1,0 +1,21 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Editor and local workspace files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Runtime and build output
+dist/
+build/
+tmp/
+*.log
+
+# Dependency directories commonly found in monorepos
+node_modules/
+.pnpm-store/
+vendor/
