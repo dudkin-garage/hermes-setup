@@ -1,58 +1,129 @@
 # Hermes Docker Environment
 
-This repository builds a local Hermes development image from the latest Hermes base image and adds common tools used inside the container.
+This repository builds a derived Hermes Agent image from the official Docker image and adds durable tooling for local operation.
+
+Official reference:
+
+https://hermes-agent.nousresearch.com/docs/user-guide/docker
+
+## What This Image Adds
+
+- 1Password CLI (`op`)
+- Neovim
+- Nano
+- Whisper (`openai-whisper`)
+
+The base image defaults to `nousresearch/hermes-agent:latest` and can be changed with `HERMES_IMAGE` in `.env`.
 
 ## Prerequisites
 
 - Docker with Docker Compose v2
-- Access to the upstream Hermes Docker image
+- Access to `nousresearch/hermes-agent:latest`
 - Optional: 1Password account or service account token if you need `op` inside the container
 
-## Configure the Hermes Base Image
+## Persistent Data
 
-Copy the environment template:
+Hermes stores config, API keys, sessions, skills, memories, logs, and per-profile home directories under `/opt/data` inside the container.
+
+This Compose setup maps that to the host directory configured by `HERMES_DATA_DIR`, which defaults to:
+
+```sh
+${HOME}/.hermes
+```
+
+Never run two Hermes gateway containers against the same data directory at the same time.
+
+## First-Time Setup
+
+Create your environment file:
 
 ```sh
 cp .env.example .env
 ```
 
-Set `HERMES_IMAGE` to the upstream Hermes image you want to extend:
-
-```sh
-HERMES_IMAGE=hermes:latest
-```
-
-If Hermes is published in a registry, use the full image name instead:
-
-```sh
-HERMES_IMAGE=ghcr.io/example/hermes:latest
-```
-
-The Dockerfile expects the Hermes base image to be Debian or Ubuntu based because it installs packages with `apt-get` and uses the official 1Password Debian repository.
-
-## Build
-
-Build the extended Hermes image:
+Build the derived image:
 
 ```sh
 docker compose build --pull hermes
 ```
 
-The resulting local image name is controlled by `HERMES_SETUP_IMAGE` in `.env` and defaults to:
+Run the setup wizard once:
 
 ```sh
-dudkin-garage/hermes-setup:local
+docker compose run --rm hermes setup
 ```
 
-## Run
+This writes Hermes configuration and secrets to `${HERMES_DATA_DIR}/.env`.
 
-Open an interactive shell:
+## Gateway Mode
+
+Start Hermes as a persistent gateway:
 
 ```sh
-docker compose run --rm hermes
+docker compose up -d
 ```
 
-The current repository is mounted at `/workspace`. A named Docker volume persists `/root` between runs so shell history, editor config, and 1Password CLI session files can survive container restarts.
+View logs:
+
+```sh
+docker compose logs -f hermes
+```
+
+Stop it:
+
+```sh
+docker compose down
+```
+
+## Ports
+
+Hermes uses two primary ports in Docker:
+
+- `8642`: gateway OpenAI-compatible API server and health endpoint
+- `9119`: web dashboard
+
+Both are published by Compose with configurable host ports:
+
+```sh
+HERMES_API_HOST_PORT=8642
+HERMES_DASHBOARD_HOST_PORT=9119
+```
+
+The API server is disabled by default. To enable it, set these values in `.env`:
+
+```sh
+API_SERVER_ENABLED=true
+API_SERVER_HOST=0.0.0.0
+API_SERVER_KEY=<minimum-8-character-secret>
+```
+
+Generate a key with:
+
+```sh
+openssl rand -hex 32
+```
+
+The dashboard is disabled by default. To enable it:
+
+```sh
+HERMES_DASHBOARD=1
+```
+
+Do not expose the dashboard publicly without configuring dashboard authentication. `HERMES_DASHBOARD_INSECURE=1` disables the auth gate and should only be used on trusted networks or behind your own auth layer.
+
+## Interactive CLI
+
+Run an interactive Hermes session against the same data directory:
+
+```sh
+docker compose run --rm hermes hermes
+```
+
+Run a shell in the image:
+
+```sh
+docker compose run --rm hermes bash
+```
 
 ## Verify Installed Tools
 
@@ -85,39 +156,59 @@ Example:
 whisper audio.mp3 --model small
 ```
 
+## Multi-Profile Notes
+
+The official image uses s6 supervision and supports multiple Hermes profiles inside one container. Create and manage profiles with `docker exec`:
+
+```sh
+docker exec hermes hermes profile create coder
+docker exec hermes hermes -p coder gateway start
+docker exec hermes hermes -p coder gateway status
+```
+
+If a second profile needs its own OpenAI-compatible API endpoint, configure a unique `API_SERVER_PORT` in that profile's own `.env` and publish that extra port in `compose.yaml`.
+
 ## Updating Hermes Later
 
-If you track `latest`, pull the newest base image and rebuild:
+If you track `latest`, pull the newest base image and recreate the container:
+
+```sh
+docker compose pull
+docker compose up -d --build
+```
+
+For a clean rebuild of the derived image:
 
 ```sh
 docker compose build --pull --no-cache hermes
+docker compose up -d --force-recreate
 ```
 
 If you pin Hermes versions, update `HERMES_IMAGE` in `.env`:
 
 ```sh
-HERMES_IMAGE=ghcr.io/example/hermes:1.2.3
+HERMES_IMAGE=nousresearch/hermes-agent:<version>
 ```
 
 Then rebuild:
 
 ```sh
 docker compose build --pull hermes
+docker compose up -d
 ```
 
-Commit version changes if `.env.example`, `compose.yaml`, or `containers/hermes/Dockerfile` changes. Do not commit local `.env` files containing tokens or account-specific settings.
+Your `${HERMES_DATA_DIR}` directory is preserved across image upgrades. Hermes may run non-interactive config migrations on startup and writes backups next to config files when needed.
 
-## Updating Installed Tools
+## Resource Limits
 
-- 1Password CLI is installed from the official 1Password apt repository during image build.
-- Neovim, Nano, Python, pipx, and ffmpeg come from the base operating system repositories.
-- Whisper is installed with `pipx install openai-whisper`.
+The official guide recommends at least 1 GB memory and 1 CPU, with 2-4 GB memory and 2 CPUs preferred when browser automation is used. Compose currently applies:
 
-To refresh all installed tools, rebuild without cache:
-
-```sh
-docker compose build --pull --no-cache hermes
+```yaml
+memory: 4G
+cpus: "2.0"
 ```
+
+The service also sets `shm_size: 1g` for Playwright/Chromium stability.
 
 ## Monorepo Notes
 

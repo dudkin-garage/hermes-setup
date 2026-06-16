@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG HERMES_IMAGE=hermes:latest
+ARG HERMES_IMAGE=nousresearch/hermes-agent:latest
 FROM ${HERMES_IMAGE}
 
 USER root
@@ -37,5 +37,3 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/* /tmp/1password.asc
 
 WORKDIR /workspace
-
-CMD ["/bin/bash"]

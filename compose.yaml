@@ -1,20 +1,40 @@
 services:
   hermes:
+    container_name: hermes
     build:
       context: .
       dockerfile: containers/hermes/Dockerfile
       args:
-        HERMES_IMAGE: ${HERMES_IMAGE:-hermes:latest}
+        HERMES_IMAGE: ${HERMES_IMAGE:-nousresearch/hermes-agent:latest}
     image: ${HERMES_SETUP_IMAGE:-dudkin-garage/hermes-setup:local}
-    working_dir: /workspace
+    restart: unless-stopped
+    command: ${HERMES_COMMAND:-gateway run}
+    shm_size: 1g
+    ports:
+      - "${HERMES_API_HOST_PORT:-8642}:${API_SERVER_PORT:-8642}"
+      - "${HERMES_DASHBOARD_HOST_PORT:-9119}:${HERMES_DASHBOARD_PORT:-9119}"
     environment:
+      API_SERVER_ENABLED: ${API_SERVER_ENABLED:-false}
+      API_SERVER_HOST: ${API_SERVER_HOST:-0.0.0.0}
+      API_SERVER_PORT: ${API_SERVER_PORT:-8642}
+      API_SERVER_KEY: ${API_SERVER_KEY:-}
+      API_SERVER_CORS_ORIGINS: ${API_SERVER_CORS_ORIGINS:-*}
+      HERMES_DASHBOARD: ${HERMES_DASHBOARD:-0}
+      HERMES_DASHBOARD_HOST: ${HERMES_DASHBOARD_HOST:-0.0.0.0}
+      HERMES_DASHBOARD_PORT: ${HERMES_DASHBOARD_PORT:-9119}
+      HERMES_DASHBOARD_INSECURE: ${HERMES_DASHBOARD_INSECURE:-0}
+      HERMES_UID: ${HERMES_UID:-}
+      HERMES_GID: ${HERMES_GID:-}
+      PUID: ${PUID:-}
+      PGID: ${PGID:-}
       OP_ACCOUNT: ${OP_ACCOUNT:-}
       OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN:-}
     volumes:
-      - .:/workspace
-      - hermes-home:/root
+      - ${HERMES_DATA_DIR:-${HOME}/.hermes}:/opt/data
     stdin_open: true
     tty: true
-
-volumes:
-  hermes-home:
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"

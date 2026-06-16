@@ -7,6 +7,10 @@ Monorepo for running Hermes in a Docker Compose environment with an extended ima
 - Nano
 - Whisper (`openai-whisper` CLI)
 
+This setup follows the official Hermes Agent Docker guide:
+
+https://hermes-agent.nousresearch.com/docs/user-guide/docker
+
 ## Repository Layout
 
 ```text
@@ -24,9 +28,15 @@ Monorepo for running Hermes in a Docker Compose environment with an extended ima
 ```sh
 cp .env.example .env
 docker compose build --pull hermes
-docker compose run --rm hermes
+docker compose run --rm hermes setup
+docker compose up -d
 ```
 
-Set `HERMES_IMAGE` in `.env` if the upstream Hermes image is not available locally as `hermes:latest`.
+By default, Hermes state is stored on the host at `${HOME}/.hermes` and mounted into the container at `/opt/data`.
+
+Ports are configurable in `.env`:
+
+- `8642` exposes the gateway OpenAI-compatible API server when `API_SERVER_ENABLED=true`.
+- `9119` exposes the dashboard when `HERMES_DASHBOARD=1`.
 
 See [`docs/hermes-docker.md`](docs/hermes-docker.md) for setup, usage, and upgrade instructions.
