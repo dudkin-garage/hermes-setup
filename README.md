@@ -1,42 +1,27 @@
-# Hermes Setup
+# Hermes SSH Reverse Tunnel Setup
 
-Monorepo for running Hermes in a Docker Compose environment with an extended image that includes:
+This setup enables SSH reverse tunneling from a Mac/local node to a Hermes Docker container on a Hetzner host.
 
-- 1Password CLI (`op`)
-- Neovim
-- Nano
-- Whisper (`openai-whisper` CLI)
-
-This setup follows the official Hermes Agent Docker guide:
-
-https://hermes-agent.nousresearch.com/docs/user-guide/docker
-
-## Repository Layout
-
-```text
-.
-├── compose.yaml
-├── containers/
-│   └── hermes/
-│       └── Dockerfile
-└── docs/
-    └── hermes-docker.md
+## Mac Tunnel Command
+Run this on your local machine:
+```bash
+ssh -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -R 172.17.0.1:18642:127.0.0.1:8642 worker@h2.dudkin-garage.com
 ```
 
-## Quick Start
+## Verification Tests
 
-```sh
-cp .env.example .env
-docker compose build --pull hermes
-docker compose run --rm hermes setup
-docker compose up -d
+### Host Tests
+Run these on the Hetzner host:
+```bash
+curl http://127.0.0.1:18642/health
+curl http://172.17.0.1:18642/health
 ```
 
-By default, Hermes state is stored on the host at `${HOME}/.hermes` and mounted into the container at `/opt/data`.
+### Container Test
+Run this inside the Hermes container:
+```bash
+curl http://host.docker.internal:18642/health
+```
 
-Ports are configurable in `.env`:
-
-- `8642` exposes the gateway OpenAI-compatible API server when `API_SERVER_ENABLED=true`.
-- `9119` exposes the dashboard when `HERMES_DASHBOARD=1`.
-
-See [`docs/hermes-docker.md`](docs/hermes-docker.md) for setup, usage, and upgrade instructions.
+## Security Note
+Do not bind `-R 0.0.0.0:18642:...` unless you have explicitly configured a firewall or additional authentication, as this would expose the port to the public internet.
