@@ -85,16 +85,21 @@ Hermes uses two primary ports in Docker:
 Both are published by Compose with configurable host ports:
 
 ```sh
+HERMES_API_BIND_HOST=127.0.0.1
 HERMES_API_HOST_PORT=8642
+HERMES_DASHBOARD_BIND_HOST=127.0.0.1
 HERMES_DASHBOARD_HOST_PORT=9119
 ```
 
-The API server is disabled by default. To enable it, set these values in `.env`:
+The default bind host is loopback-only. Use `make tunnel` from your local machine to reach these VPS-local ports over SSH instead of exposing them publicly.
+
+The example environment enables the API server so it can accept requests through the SSH tunnel:
 
 ```sh
 API_SERVER_ENABLED=true
 API_SERVER_HOST=0.0.0.0
 API_SERVER_KEY=<minimum-8-character-secret>
+API_SERVER_CORS_ORIGINS=http://127.0.0.1:19119,http://localhost:19119
 ```
 
 Generate a key with:
@@ -103,13 +108,37 @@ Generate a key with:
 openssl rand -hex 32
 ```
 
-The dashboard is disabled by default. To enable it:
+The example environment also enables the Hermes dashboard:
 
 ```sh
 HERMES_DASHBOARD=1
+HERMES_DASHBOARD_INSECURE=1
 ```
 
-Do not expose the dashboard publicly without configuring dashboard authentication. `HERMES_DASHBOARD_INSECURE=1` disables the auth gate and should only be used on trusted networks or behind your own auth layer.
+Do not expose the dashboard publicly without configuring dashboard authentication. `HERMES_DASHBOARD_INSECURE=1` disables the auth gate and should only be used on trusted networks, loopback-only Docker bindings, or behind your own auth layer.
+
+## SSH Tunnel
+
+Configure your VPS SSH endpoint in `.env`:
+
+```sh
+VPS_HOST=h2.dudkin-garage.com
+VPS_SSH_USER=worker
+VPS_SSH_PORT=22
+```
+
+Open both the dashboard and API tunnels:
+
+```sh
+make tunnel
+```
+
+Local URLs:
+
+```sh
+http://127.0.0.1:19119  # dashboard
+http://127.0.0.1:18642  # API
+```
 
 ## Interactive CLI
 

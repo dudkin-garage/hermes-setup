@@ -11,8 +11,8 @@ services:
     command: ${HERMES_COMMAND:-gateway run}
     shm_size: 1g
     ports:
-      - "${HERMES_API_HOST_PORT:-8642}:${API_SERVER_PORT:-8642}"
-      - "${HERMES_DASHBOARD_HOST_PORT:-9119}:${HERMES_DASHBOARD_PORT:-9119}"
+      - "${HERMES_API_BIND_HOST:-127.0.0.1}:${HERMES_API_HOST_PORT:-8642}:${API_SERVER_PORT:-8642}"
+      - "${HERMES_DASHBOARD_BIND_HOST:-127.0.0.1}:${HERMES_DASHBOARD_HOST_PORT:-9119}:${HERMES_DASHBOARD_PORT:-9119}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:
