@@ -11,6 +11,7 @@ https://hermes-agent.nousresearch.com/docs/user-guide/docker
 - 1Password CLI (`op`)
 - Neovim
 - Nano
+- Obsidian CLI (`obsidian`)
 - Whisper (`openai-whisper`)
 
 The base image defaults to `nousresearch/hermes-agent:latest` and can be changed with `HERMES_IMAGE` in `.env`.
@@ -32,6 +33,21 @@ ${HOME}/.hermes
 ```
 
 Never run two Hermes gateway containers against the same data directory at the same time.
+
+Obsidian vaults are mounted separately from Hermes runtime data. Configure the host directory with:
+
+```sh
+OBSIDIAN_VAULTS_HOST_DIR=${HOME}/obsidian-vaults
+OBSIDIAN_VAULTS_CONTAINER_DIR=/workspace/obsidian-vaults
+```
+
+Inside the Hermes container, the vault directory is available as:
+
+```sh
+$OBSIDIAN_VAULTS_DIR
+```
+
+The default container path is `/workspace/obsidian-vaults`.
 
 ## First-Time Setup
 
@@ -235,10 +251,22 @@ Inside the container, verify the installed tools:
 
 ```sh
 op --version
+obsidian --help
 nvim --version
 nano --version
 whisper --help
 ```
+
+## Obsidian Vaults
+
+Create or store vaults under the mounted vault directory so Hermes can read and update them:
+
+```sh
+docker compose run --rm hermes sh -lc 'obsidian new "$OBSIDIAN_VAULTS_DIR/my-vault"'
+docker compose run --rm hermes obsidian ls -l
+```
+
+On the host, the same files are stored under `${OBSIDIAN_VAULTS_HOST_DIR}`.
 
 ## 1Password CLI
 

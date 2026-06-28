@@ -19,6 +19,15 @@ HERMES_API_BIND_HOST=127.0.0.1
 HERMES_DASHBOARD_BIND_HOST=127.0.0.1
 ```
 
+Obsidian vaults are mounted into Hermes separately from runtime data:
+
+```bash
+OBSIDIAN_VAULTS_HOST_DIR=${HOME}/obsidian-vaults
+OBSIDIAN_VAULTS_CONTAINER_DIR=/workspace/obsidian-vaults
+```
+
+Inside the container, Hermes and the bundled `obsidian` CLI can use `$OBSIDIAN_VAULTS_DIR`.
+
 ## Cloudflare Tunnel
 
 The public dashboard URL is:
