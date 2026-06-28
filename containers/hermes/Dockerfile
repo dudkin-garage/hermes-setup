@@ -6,6 +6,7 @@ FROM ${HERMES_IMAGE}
 USER root
 
 ENV DEBIAN_FRONTEND=noninteractive \
+    OBSIDIAN_VAULTS_DIR=/workspace/obsidian-vaults \
     PIPX_HOME=/opt/pipx \
     PIPX_BIN_DIR=/usr/local/bin
 
@@ -33,7 +34,9 @@ RUN set -eux; \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" > /etc/apt/sources.list.d/1password.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends 1password-cli; \
+    pipx install --pip-args='--no-cache-dir' obsidian-cli; \
     pipx install --pip-args='--no-cache-dir' openai-whisper; \
+    install -d -m 0775 /workspace/obsidian-vaults; \
     rm -rf /var/lib/apt/lists/* /tmp/1password.asc
 
 WORKDIR /workspace
