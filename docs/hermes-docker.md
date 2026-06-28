@@ -13,7 +13,6 @@ https://hermes-agent.nousresearch.com/docs/user-guide/docker
 - Nano
 - Obsidian CLI (`obsidian`)
 - Whisper (`openai-whisper`)
-- NeuTTS (`neutts`) in `/opt/neutts-venv`, with `neutts-python` and `neutts-pip` wrappers
 
 The base image defaults to `nousresearch/hermes-agent:latest` and can be changed with `HERMES_IMAGE` in `.env`.
 
@@ -49,18 +48,6 @@ $OBSIDIAN_VAULTS_DIR
 ```
 
 The default container path is `/workspace/obsidian-vaults`.
-
-NeuTTS model weights and Hugging Face/Torch caches are mounted separately from the image at:
-
-```sh
-/opt/models/neutts
-```
-
-Compose stores that directory in the named Docker volume configured by `NEUTTS_MODELS_VOLUME`, which defaults to:
-
-```sh
-hermes-neutts-models
-```
 
 ## First-Time Setup
 
@@ -272,7 +259,6 @@ obsidian --help
 nvim --version
 nano --version
 whisper --help
-neutts-python -c 'from neutts import NeuTTS; print("NeuTTS import ok")'
 ```
 
 ## Obsidian Vaults
@@ -305,20 +291,6 @@ Example:
 ```sh
 whisper audio.mp3 --model small
 ```
-
-## NeuTTS
-
-NeuTTS is installed in an isolated Python virtual environment at `/opt/neutts-venv`. Use the `neutts-python` wrapper so it can import the bundled package without changing Hermes' Python environment.
-
-The image installs the `neutts[all]` extras, including `onnxruntime` and `llama-cpp-python` compiled with OpenBLAS for CPU inference. Downloaded model files are not baked into the image; Hugging Face and Torch caches are directed to `${NEUTTS_MODELS_DIR}`, which Compose mounts from the `NEUTTS_MODELS_VOLUME` named volume.
-
-Example import check:
-
-```sh
-docker compose run --rm --no-deps --entrypoint /bin/sh hermes -lc 'neutts-python -c "from neutts import NeuTTS; print(\"NeuTTS import ok\")"'
-```
-
-The first real synthesis run will download model weights into the `hermes-neutts-models` volume unless you change `NEUTTS_MODELS_VOLUME` in `.env`.
 
 ## Multi-Profile Notes
 
