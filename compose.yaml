@@ -26,3 +26,13 @@ services:
         limits:
           memory: 4G
           cpus: "2.0"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: hermes-cloudflared
+    restart: unless-stopped
+    depends_on:
+      - hermes
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}

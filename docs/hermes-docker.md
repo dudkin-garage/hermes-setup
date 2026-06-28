@@ -91,7 +91,7 @@ HERMES_DASHBOARD_BIND_HOST=127.0.0.1
 HERMES_DASHBOARD_HOST_PORT=9119
 ```
 
-The default bind host is loopback-only. Use `make tunnel` from your local machine to reach these VPS-local ports over SSH instead of exposing them publicly.
+The API bind host is loopback-only by default. Use `make tunnel-api` from your local machine to reach the VPS-local API port over SSH instead of exposing it publicly.
 
 The example environment enables the API server so it can accept requests through the SSH tunnel:
 
@@ -99,7 +99,7 @@ The example environment enables the API server so it can accept requests through
 API_SERVER_ENABLED=true
 API_SERVER_HOST=0.0.0.0
 API_SERVER_KEY=<minimum-8-character-secret>
-API_SERVER_CORS_ORIGINS=http://127.0.0.1:19119,http://localhost:19119
+API_SERVER_CORS_ORIGINS=https://hermes-h2.dudkin-garage.com,http://127.0.0.1:19119,http://localhost:19119
 ```
 
 Generate a key with:
@@ -112,10 +112,84 @@ The example environment also enables the Hermes dashboard:
 
 ```sh
 HERMES_DASHBOARD=1
-HERMES_DASHBOARD_INSECURE=1
+HERMES_DASHBOARD_INSECURE=0
+HERMES_DASHBOARD_PUBLIC_URL=https://hermes-h2.dudkin-garage.com
+HERMES_DASHBOARD_OIDC_ISSUER=https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<cloudflare-access-oidc-client-id>
+HERMES_DASHBOARD_OIDC_CLIENT_ID=<cloudflare-access-oidc-client-id>
+HERMES_DASHBOARD_OIDC_SCOPES="openid email profile"
 ```
 
-Do not expose the dashboard publicly without configuring dashboard authentication. `HERMES_DASHBOARD_INSECURE=1` disables the auth gate and should only be used on trusted networks, loopback-only Docker bindings, or behind your own auth layer.
+## Cloudflare Tunnel
+
+The Compose stack includes a `cloudflared` connector so the dashboard can be exposed without opening public inbound ports on the VPS.
+
+Create the tunnel in Cloudflare:
+
+1. Open **Cloudflare Zero Trust**.
+2. Go to **Networks** -> **Tunnels**.
+3. Click **Create a tunnel**.
+4. Select **Cloudflared**.
+5. Name it `hermes-h2`.
+6. Choose **Docker** as the connector environment.
+7. Copy the generated tunnel token.
+
+Set the token in `.env` on the VPS:
+
+```sh
+CLOUDFLARE_TUNNEL_TOKEN=<cloudflare-generated-token>
+```
+
+Add this public hostname to the tunnel in Cloudflare:
+
+```sh
+Subdomain: hermes-h2
+Domain: dudkin-garage.com
+Path: <empty>
+Service Type: HTTP
+Service URL: hermes:9119
+```
+
+That routes:
+
+```sh
+https://hermes-h2.dudkin-garage.com -> http://hermes:9119
+```
+
+No public `80`, `443`, or `9119` inbound ports are required on the VPS for the dashboard when using Cloudflare Tunnel.
+
+Create the OIDC application in Cloudflare Access:
+
+1. Open **Cloudflare Zero Trust**.
+2. Go to **Access controls** -> **Applications**.
+3. Click **Create new application**.
+4. Select **SaaS application**.
+5. Enter a custom application name, for example `Hermes Dashboard`.
+6. Select **OIDC**.
+7. Add this redirect URL:
+
+```sh
+https://hermes-h2.dudkin-garage.com/auth/callback
+```
+
+8. Select the `openid`, `email`, and `profile` scopes.
+9. Add an Access policy that allows the users or groups that should reach Hermes.
+10. Copy the generated **Issuer** and **Client ID** values into `.env`.
+
+Cloudflare's issuer has this shape:
+
+```sh
+https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<cloudflare-access-oidc-client-id>
+```
+
+Cloudflare also shows a client secret for the OIDC SaaS application. If Hermes asks for an OIDC client secret in its dashboard setup, copy that value from Cloudflare into the corresponding Hermes setting.
+
+The OIDC configuration endpoint is useful for troubleshooting provider discovery:
+
+```sh
+https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<cloudflare-access-oidc-client-id>/.well-known/openid-configuration
+```
+
+Do not expose the dashboard publicly without configuring dashboard authentication. Keep `HERMES_DASHBOARD_INSECURE=0` for public access.
 
 ## SSH Tunnel
 
@@ -127,17 +201,16 @@ VPS_SSH_USER=worker
 VPS_SSH_PORT=22
 ```
 
-Open both the dashboard and API tunnels:
+Open the API tunnel:
 
 ```sh
-make tunnel
+make tunnel-api
 ```
 
-Local URLs:
+Local API URL:
 
 ```sh
-http://127.0.0.1:19119  # dashboard
-http://127.0.0.1:18642  # API
+http://127.0.0.1:18642
 ```
 
 ## Interactive CLI
