@@ -173,7 +173,9 @@ https://hermes-h2.dudkin-garage.com/auth/callback
 
 8. Select the `openid`, `email`, and `profile` scopes.
 9. Add an Access policy that allows the users or groups that should reach Hermes.
-10. Copy the generated **Issuer** and **Client ID** values into `.env`.
+10. Configure the OIDC client as a public client that uses authorization code flow with PKCE S256.
+11. Disable any requirement for a client secret. Hermes' self-hosted OIDC provider does not support confidential clients yet.
+12. Copy the generated **Issuer** and **Client ID** values into `.env`.
 
 Cloudflare's issuer has this shape:
 
@@ -181,7 +183,7 @@ Cloudflare's issuer has this shape:
 https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<cloudflare-access-oidc-client-id>
 ```
 
-Cloudflare also shows a client secret for the OIDC SaaS application. If Hermes asks for an OIDC client secret in its dashboard setup, copy that value from Cloudflare into the corresponding Hermes setting.
+Do not configure Hermes with a Cloudflare OIDC client secret. If Cloudflare only offers a confidential client for this app, it is not compatible with Hermes dashboard OIDC; the token exchange will fail after sign-in.
 
 The OIDC configuration endpoint is useful for troubleshooting provider discovery:
 
