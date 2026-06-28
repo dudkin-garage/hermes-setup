@@ -19,9 +19,14 @@ services:
       - .env
     environment:
       OBSIDIAN_VAULTS_DIR: ${OBSIDIAN_VAULTS_CONTAINER_DIR:-/workspace/obsidian-vaults}
+      NEUTTS_MODELS_DIR: ${NEUTTS_MODELS_CONTAINER_DIR:-/opt/models/neutts}
+      HF_HOME: ${NEUTTS_MODELS_CONTAINER_DIR:-/opt/models/neutts}/huggingface
+      HUGGINGFACE_HUB_CACHE: ${NEUTTS_MODELS_CONTAINER_DIR:-/opt/models/neutts}/huggingface/hub
+      TORCH_HOME: ${NEUTTS_MODELS_CONTAINER_DIR:-/opt/models/neutts}/torch
     volumes:
       - ${HERMES_DATA_DIR:-${HOME}/.hermes}:/opt/data
       - ${OBSIDIAN_VAULTS_HOST_DIR:-${HOME}/obsidian-vaults}:${OBSIDIAN_VAULTS_CONTAINER_DIR:-/workspace/obsidian-vaults}
+      - neutts-models:${NEUTTS_MODELS_CONTAINER_DIR:-/opt/models/neutts}
     stdin_open: true
     tty: true
     deploy:
@@ -39,3 +44,7 @@ services:
     command: tunnel --no-autoupdate run
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+
+volumes:
+  neutts-models:
+    name: ${NEUTTS_MODELS_VOLUME:-hermes-neutts-models}
